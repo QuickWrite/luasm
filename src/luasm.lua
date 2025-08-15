@@ -49,7 +49,6 @@ function LuASM.string_tokenizer(input)
         end
 
         local startIndex, endIndex = string.find(tokenizer.input, "[^\r\n]+", tokenizer.cursor)
-        print("End line: " .. endIndex)
 
         local line = trim(string.sub(tokenizer.input, tokenizer.cursor, endIndex))
 
