@@ -59,6 +59,33 @@ function LuASM:new(instructions, settings)
     return obj
 end
 
+--[[
+    Creates an instruction that is being used for parsing the input
+
+    Example:
+    ```
+    LuASM:instruction("jmp", {"label"}, {})
+    ```
+
+    @param name The name of the instruction
+    @param structure A list of datatypes on how the instruction should be parsed
+    @param Different settings for the instruction
+]]
+function LuASM.instruction(name, structure, settings)
+    local obj = {}
+
+    obj.name = name
+    obj.structure = structure
+
+    -- Default settings
+    setmetatable(settings, {__index={
+        -- Currently no settings
+    }})
+    obj.settings = settings
+
+    return obj
+end
+
 function LuASM:file_tokenizer(name)
     
 end
@@ -88,6 +115,20 @@ function LuASM.string_tokenizer(input)
     return tokenizer
 end
 
--- TODO: Everything
+--[[
+    Parses the inputted source and returns a list of instructions.
+
+    @param tokenizer The tokenizer
+]]
+function LuASM:parse(tokenizer)
+    local token
+    repeat
+        token = tokenizer:get_next_line()
+
+        if token ~= nil then
+            -- TODO: Create parser
+        end
+    until token == nil -- or true
+end
 
 return luasm
