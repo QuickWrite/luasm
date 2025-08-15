@@ -36,6 +36,33 @@ local LuASM = {}
 
 LuASM.version = "0.0.1"
 
+--[[
+    Creates a new LuASM runner with the specific instructions and settings
+]]
+function LuASM:new(instructions, settings)
+    -- Default settings
+    setmetatable(settings,{__index={
+        comma = false,
+        reg_prefix = "",
+        imm_prefix = "",
+        label_syntax = "[%a]+:"
+    }})
+
+    local obj = {}
+
+    setmetatable(obj, self)
+    self.__index = self
+
+    obj.instructions = instructions
+    obj.settings = settings
+
+    return obj
+end
+
+function LuASM:file_tokenizer(name)
+    
+end
+
 function LuASM.string_tokenizer(input)
     local tokenizer = Tokenizer:new()
 
