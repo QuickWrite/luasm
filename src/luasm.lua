@@ -45,7 +45,9 @@ function LuASM:new(instructions, settings)
         comma = false,
         reg_prefix = "",
         imm_prefix = "",
-        label_syntax = "[%a]+:"
+        label = true,
+        label_syntax = "[%a]+:",
+        label_content_syntax = "[%a]+"
     }})
 
     local obj = {}
@@ -121,14 +123,56 @@ end
     @param tokenizer The tokenizer
 ]]
 function LuASM:parse(tokenizer)
+    local line = 0
+
+    local parse_data = {
+        labels = {},
+        parsed_lines = 0,
+        error = nil
+    }
+
     local token
     repeat
         token = tokenizer:get_next_line()
+        parse_data.parsed_lines = parse_data.parsed_lines + 1
 
         if token ~= nil then
-            -- TODO: Create parser
+
+            --[[
+                This is very basic label processing as labels could be
+                nested and there could be priorities assigned with labels.
+
+                But here all the labels are just a simple reference to a line.
+            ]]
+
+            -- Label processing
+            if self.settings.label then
+                local label_base = token:match(self.settings.label_syntax)
+                if(label_base ~= nil) then
+                    local label = token:match(self.settings.label_content_syntax)
+
+                    -- Find label
+                    if parse_data.labels[label] ~= nil then
+                        parse_data.error = "The label '" .. label "' was found twice."
+
+                        return parse_data
+                    end
+
+                    -- Input Label
+                    parse_data.labels[label] = { name = label, location = line }
+                    print("Found label - " .. label)
+
+                    token = token:sub(label_base:len()) -- Remove the label from the token
+                end
+            end
+
+            for index, instruction in ipairs(self.instructions) do
+               -- TODO: Create parser 
+            end
         end
     until token == nil -- or true
+
+    return parse_data
 end
 
 return luasm
