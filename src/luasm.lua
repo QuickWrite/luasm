@@ -16,7 +16,7 @@ end
 local Tokenizer = {}
 
 function Tokenizer.get_next_line()
-    print("This function has to be implemented!")
+    error("This function has to be implemented!")
     return nil
 end
 
@@ -167,7 +167,6 @@ function LuASM:parse(tokenizer)
 
                     -- Input Label
                     parse_data.labels[label] = { name = label, location = line }
-                    print("Found label - " .. label)
 
                     token = trim(rest)
 
