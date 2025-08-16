@@ -60,6 +60,12 @@ function LuASM:new(instructions, settings)
     return obj
 end
 
+local instruction = {}
+function instruction:parse(elements, luasm)
+    -- TODO: Build parser
+    return self.name
+end
+
 --[[
     Creates an instruction that is being used for parsing the input
 
@@ -83,6 +89,9 @@ function LuASM.instruction(name, structure, settings)
         -- Currently no settings
     }})
     obj.settings = settings
+
+    setmetatable(obj, instruction)
+    instruction.__index = instruction
 
     return obj
 end
@@ -125,6 +134,7 @@ function LuASM:parse(tokenizer)
     local line = 0
 
     local parse_data = {
+        instructions = {},
         labels = {},
         parsed_lines = 0,
         error = nil
@@ -164,14 +174,26 @@ function LuASM:parse(tokenizer)
                 end
             end
 
-            for index, instruction in ipairs(self.instructions) do
-               -- TODO: Create parser 
             local elements = {}
 
             string.gsub(token, self.settings.separator, function(value) elements[#elements + 1] = value end)
             if #elements == 0 then
                 goto continue
             end
+
+            for _, instruction in ipairs(self.instructions) do
+                if instruction.name ~= elements[1] then -- Not a valid instruction
+                    goto continue
+                end
+
+                local result = instruction:parse(elements, self)
+                if result ~= nil then
+                    parse_data.instructions[#parse_data.instructions + 1] = result
+
+                    break
+                end
+
+                ::continue::
             end
 
             ::continue::
