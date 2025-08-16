@@ -42,7 +42,7 @@ LuASM.version = "0.0.1"
 function LuASM:new(instructions, settings)
     -- Default settings
     setmetatable(settings,{__index={
-        comma = false,
+        separator = "[^,%s]+",
         reg_prefix = "",
         imm_prefix = "",
         label = true,
@@ -166,7 +166,15 @@ function LuASM:parse(tokenizer)
 
             for index, instruction in ipairs(self.instructions) do
                -- TODO: Create parser 
+            local elements = {}
+
+            string.gsub(token, self.settings.separator, function(value) elements[#elements + 1] = value end)
+            if #elements == 0 then
+                goto continue
             end
+            end
+
+            ::continue::
         end
     until token == nil -- or true
 
