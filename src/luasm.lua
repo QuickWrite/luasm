@@ -46,8 +46,7 @@ function LuASM:new(instructions, settings)
         reg_prefix = "",
         imm_prefix = "",
         label = true,
-        label_syntax = "[%a]+:",
-        label_content_syntax = "[%a]+"
+        label_syntax = "^([%a]+):%s*(.*)"
     }})
 
     local obj = {}
@@ -147,10 +146,8 @@ function LuASM:parse(tokenizer)
 
             -- Label processing
             if self.settings.label then
-                local label_base = token:match(self.settings.label_syntax)
-                if(label_base ~= nil) then
-                    local label = token:match(self.settings.label_content_syntax)
-
+                local label, rest = token:match(self.settings.label_syntax)
+                if(label ~= nil) then
                     -- Find label
                     if parse_data.labels[label] ~= nil then
                         parse_data.error = "The label '" .. label "' was found twice."
@@ -162,7 +159,8 @@ function LuASM:parse(tokenizer)
                     parse_data.labels[label] = { name = label, location = line }
                     print("Found label - " .. label)
 
-                    token = token:sub(label_base:len()) -- Remove the label from the token
+                    token = trim(rest)
+
                 end
             end
 
