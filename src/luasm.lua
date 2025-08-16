@@ -62,8 +62,24 @@ end
 
 local instruction = {}
 function instruction:parse(elements, luasm)
-    -- TODO: Build parser
-    return self.name
+    -- `elements[1]` is the mnemonic, the rest are raw operands
+    local opcode = self.name
+    local expected = self.structure          -- e.g. {"imm","reg"}
+
+    if #elements - 1 ~= #expected then
+        local error = string.format(
+            "Wrong number of operands for %s (expected %d, got %d)",
+            opcode, #expected, #elements - 1)
+        return error
+    end
+
+    -- TODO: Better argument parsing
+    local args = {}
+    for i = 2, #elements do
+        args[i-1] = elements[i]
+    end
+
+    return { op = opcode, args = args, line = luasm.current_line }
 end
 
 --[[
@@ -186,10 +202,12 @@ function LuASM:parse(tokenizer)
                 end
 
                 local result = instruction:parse(elements, self)
-                if result ~= nil then
+                if type(result) == "table" then
                     parse_data.instructions[#parse_data.instructions + 1] = result
 
                     break
+                else
+                    -- TODO: Something else
                 end
 
                 ::continue::
