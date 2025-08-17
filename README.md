@@ -66,7 +66,7 @@ end
 Which should result in something like this:
 ```txt
 Lines parsed:   4
-Label: start -> line:   0
+Label: start -> line:   1
 1       mov
 2       add
 3       jmp

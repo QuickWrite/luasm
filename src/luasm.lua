@@ -156,8 +156,6 @@ end
     @param tokenizer The tokenizer
 ]]
 function LuASM:parse(tokenizer)
-    local line = 0
-
     local parse_data = {
         instructions = {},
         labels = {},
@@ -191,7 +189,7 @@ function LuASM:parse(tokenizer)
                     end
 
                     -- Input Label
-                    parse_data.labels[label] = { name = label, location = line }
+                    parse_data.labels[label] = { name = label, location = parse_data.parsed_lines }
 
                     token = trim(rest)
 
