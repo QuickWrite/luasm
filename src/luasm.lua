@@ -229,4 +229,4 @@ function LuASM:parse(tokenizer)
     return parse_data
 end
 
-return luasm
+return LuASM
