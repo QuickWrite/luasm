@@ -161,8 +161,7 @@ function LuASM:parse(tokenizer)
     local parse_data = {
         instructions = {},
         labels = {},
-        parsed_lines = 0,
-        error = nil
+        parsed_lines = 0
     }
 
     local token
@@ -185,9 +184,10 @@ function LuASM:parse(tokenizer)
                 if(label ~= nil) then
                     -- Find label
                     if parse_data.labels[label] ~= nil then
-                        parse_data.error = "The label '" .. label "' was found twice."
-
-                        return parse_data
+                        return parse_data, { 
+                            errors = { "The label '" .. label "' was found twice." },
+                            line = parse_data.parsed_lines
+                        }
                     end
 
                     -- Input Label
@@ -205,28 +205,44 @@ function LuASM:parse(tokenizer)
                 goto continue
             end
 
+            local errors = {}
             for _, instruction in ipairs(self.instructions) do
                 if instruction.name ~= elements[1] then -- Not a valid instruction
-                    goto continue
+                    goto inline_continue
                 end
 
                 local result = instruction:parse(elements, self)
                 if type(result) == "table" then
                     parse_data.instructions[#parse_data.instructions + 1] = result
 
-                    break
+                    goto continue
                 else
-                    -- TODO: Something else
+                    errors[#errors + 1] = result
                 end
 
-                ::continue::
+                ::inline_continue::
+            end
+
+            -- When the program gets here no instruction had the ability to parse this
+            if #errors == 0 then
+                -- There exists no instruction with that name,
+                return parse_data, { 
+                    errors = { "There is no instruction with the name '" .. elements[1] .. "'" }, 
+                    line = parse_data.parsed_lines 
+                }
+            else -- The else only exists to please the linter
+                return parse_data, {
+                    errors = errors,
+                    line = parse_data.parsed_lines
+                }
             end
 
             ::continue::
         end
     until token == nil -- or true
 
-    return parse_data
+    return parse_data, nil
+end
 end
 
 return LuASM
