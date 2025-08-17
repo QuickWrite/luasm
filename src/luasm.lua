@@ -112,8 +112,17 @@ function LuASM.instruction(name, structure, settings)
     return obj
 end
 
-function LuASM:file_tokenizer(name)
-    
+function LuASM.file_tokenizer(name)
+    local file = io.open(name, "r")
+    if file == nil then
+        return nil
+    end
+
+    local tokenizer = LuASM.string_tokenizer(file:read("*a"))
+
+    file:close()
+
+    return tokenizer
 end
 
 function LuASM.string_tokenizer(input)
