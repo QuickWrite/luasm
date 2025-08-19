@@ -43,9 +43,12 @@ function LuASM:new(instructions, settings)
     -- Default settings
     setmetatable(settings,{__index={
         separator = "[^,%s]+",
-        reg_prefix = "",
-        imm_prefix = "",
         label = "^([%a]+):%s*(.*)",
+        syntax = {
+            imm = "^[%d]+",
+            reg = "^%a[%w]*",
+            label = "^[%a]+"
+        }
     }})
 
     local obj = {}
@@ -72,10 +75,18 @@ function instruction:parse(elements, luasm)
         return error
     end
 
-    -- TODO: Better argument parsing
     local args = {}
     for i = 2, #elements do
-        args[i-1] = elements[i]
+        -- TODO: If structure element does not exist in settings
+        local arg = elements[i]:match(luasm.settings.syntax[expected[i-1]])
+        if arg == nil then
+            local error = string.format(
+                "Could not match argument '%s' (expected %s)",
+                elements[i], expected[i-1])
+            return error
+        end
+
+        args[i-1] = arg
     end
 
     return { op = opcode, args = args, line = luasm.current_line }
