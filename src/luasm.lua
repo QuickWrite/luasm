@@ -241,6 +241,5 @@ function LuASM:parse(tokenizer)
 
     return parse_data, nil
 end
-end
 
 return LuASM
