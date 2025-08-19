@@ -45,8 +45,7 @@ function LuASM:new(instructions, settings)
         separator = "[^,%s]+",
         reg_prefix = "",
         imm_prefix = "",
-        label = true,
-        label_syntax = "^([%a]+):%s*(.*)"
+        label = "^([%a]+):%s*(.*)",
     }})
 
     local obj = {}
@@ -177,8 +176,8 @@ function LuASM:parse(tokenizer)
             ]]
 
             -- Label processing
-            if self.settings.label then
-                local label, rest = token:match(self.settings.label_syntax)
+            if self.settings.label ~= nil then
+                local label, rest = token:match(self.settings.label)
                 if(label ~= nil) then
                     -- Find label
                     if parse_data.labels[label] ~= nil then
