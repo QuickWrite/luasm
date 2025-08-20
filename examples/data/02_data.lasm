@@ -1,0 +1,3 @@
+start:  mov 10 r0
+        add  r0 r1
+        jmp  start
