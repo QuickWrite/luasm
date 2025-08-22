@@ -21,10 +21,10 @@ LuASM.version = "0.0.1"
 
 --[[
     Creates a new LuASM runner with the specific instructions and settings
-]]
+--]]
 function LuASM:new(instructions, settings)
     -- Default settings
-    setmetatable(settings,{__index={
+    setmetatable(settings, { __index = {
         separator = "[^,%s]+",
         label = "^([%a]+):%s*(.*)",
         syntax = {
@@ -58,7 +58,7 @@ local instruction = {}
     @param name The name of the instruction
     @param structure A list of datatypes on how the instruction should be parsed
     @param Different settings for the instruction
-]]
+--]]
 function LuASM.instruction(name, structure, settings)
     local obj = {}
 
@@ -66,8 +66,8 @@ function LuASM.instruction(name, structure, settings)
     obj.structure = structure
 
     -- Default settings
-    setmetatable(settings, {__index={
         -- Currently no settings
+    setmetatable(settings, { __index = {
     }})
     obj.settings = settings
 
@@ -90,7 +90,7 @@ end
 
 --[[
     Creates a new tokenizer without a specific implementation.
-]]
+--]]
 function Tokenizer:new()
     local obj = {}
 
@@ -169,15 +169,15 @@ function instruction:parse(elements, luasm)
     local args = {}
     for i = 2, #elements do
         -- TODO: If structure element does not exist in settings
-        local arg = elements[i]:match(luasm.settings.syntax[expected[i-1]])
+        local arg = elements[i]:match(luasm.settings.syntax[expected[i - 1]])
         if arg == nil then
             local error = string.format(
                 "Could not match argument '%s' (expected %s)",
-                elements[i], expected[i-1])
+                elements[i], expected[i - 1])
             return error
         end
 
-        args[i-1] = arg
+        args[i - 1] = arg
     end
 
     return { op = opcode, args = args, line = luasm.current_line }
@@ -187,7 +187,7 @@ end
     Parses the inputted source and returns a list of instructions.
 
     @param tokenizer The tokenizer
-]]
+--]]
 function LuASM:parse(tokenizer)
     local parse_data = {
         instructions = {},
@@ -216,7 +216,7 @@ function LuASM:parse(tokenizer)
                     -- Find label
                     if parse_data.labels[label] ~= nil then
                         return parse_data, {
-                            errors = { "The label '" .. label "' was found twice." },
+                            errors = { "The label '" .. label .. "' was found twice." },
                             line = parse_data.parsed_lines
                         }
                     end
