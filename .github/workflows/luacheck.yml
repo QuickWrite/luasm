@@ -1,0 +1,23 @@
+name: Luacheck
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  
+  workflow_dispatch:
+
+jobs:
+  luacheck:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Run luacheck for the codebase in the src/ folder
+      - name: Luacheck linter
+        uses: lunarmodules/luacheck@v1
+        with:
+            args: src
