@@ -1,10 +1,10 @@
 --[[
-     _             _    ____  __  __ 
+     _             _    ____  __  __
     | |   _   _   / \  / ___||  \/  |
     | |  | | | | / _ \ \___ \| |\/| |
     | |__| |_| |/ ___ \ ___) | |  | |
     |_____\__,_/_/   \_\____/|_|  |_|
-                                    
+
 
 A library to parse and execute custom ASM.
 --]]
@@ -135,7 +135,7 @@ function LuASM.string_tokenizer(input)
             return nil
         end
 
-        local startIndex, endIndex = string.find(tokenizer.input, "[^\r\n]+", tokenizer.cursor)
+        local _, endIndex = string.find(tokenizer.input, "[^\r\n]+", tokenizer.cursor)
 
         local line = trim(string.sub(tokenizer.input, tokenizer.cursor, endIndex))
 
@@ -151,7 +151,7 @@ end
 --[[
     Parses the instruction and returns an object with the structure:
     { op = opcode, args = args, line = current line }
-    
+
     If the parsing has errored out, it returns a string with the error message.
 --]]
 function instruction:parse(elements, luasm)
@@ -215,7 +215,7 @@ function LuASM:parse(tokenizer)
                 if(label ~= nil) then
                     -- Find label
                     if parse_data.labels[label] ~= nil then
-                        return parse_data, { 
+                        return parse_data, {
                             errors = { "The label '" .. label "' was found twice." },
                             line = parse_data.parsed_lines
                         }
@@ -237,12 +237,12 @@ function LuASM:parse(tokenizer)
             end
 
             local errors = {}
-            for _, instruction in ipairs(self.instructions) do
-                if instruction.name ~= elements[1] then -- Not a valid instruction
+            for _, instr in ipairs(self.instructions) do
+                if instr.name ~= elements[1] then -- Not a valid instruction
                     goto inline_continue
                 end
 
-                local result = instruction:parse(elements, self)
+                local result = instr:parse(elements, self)
                 if type(result) == "table" then
                     parse_data.instructions[#parse_data.instructions + 1] = result
 
@@ -257,9 +257,9 @@ function LuASM:parse(tokenizer)
             -- When the program gets here no instruction had the ability to parse this
             if #errors == 0 then
                 -- There exists no instruction with that name,
-                return parse_data, { 
-                    errors = { "There is no instruction with the name '" .. elements[1] .. "'" }, 
-                    line = parse_data.parsed_lines 
+                return parse_data, {
+                    errors = { "There is no instruction with the name '" .. elements[1] .. "'" },
+                    line = parse_data.parsed_lines
                 }
             else -- The else only exists to please the linter
                 return parse_data, {
