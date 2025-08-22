@@ -9,29 +9,12 @@
 A library to parse and execute custom ASM.
 --]]
 
+-- Helper functions
 local function trim(s)
     return s:match('^%s*(.-)%s*$')
 end
 
-local Tokenizer = {}
-
-function Tokenizer.get_next_line()
-    error("This function has to be implemented!")
-    return nil
-end
-
---[[
-    Creates a new tokenizer without a specific implementation.
-]]
-function Tokenizer:new()
-    local obj = {}
-
-    setmetatable(obj, self)
-    self.__index = self
-
-    return obj
-end
-
+-- LuASM object
 local LuASM = {}
 
 LuASM.version = "0.0.1"
@@ -63,34 +46,6 @@ function LuASM:new(instructions, settings)
 end
 
 local instruction = {}
-function instruction:parse(elements, luasm)
-    -- `elements[1]` is the mnemonic, the rest are raw operands
-    local opcode = self.name
-    local expected = self.structure          -- e.g. {"imm","reg"}
-
-    if #elements - 1 ~= #expected then
-        local error = string.format(
-            "Wrong number of operands for %s (expected %d, got %d)",
-            opcode, #expected, #elements - 1)
-        return error
-    end
-
-    local args = {}
-    for i = 2, #elements do
-        -- TODO: If structure element does not exist in settings
-        local arg = elements[i]:match(luasm.settings.syntax[expected[i-1]])
-        if arg == nil then
-            local error = string.format(
-                "Could not match argument '%s' (expected %s)",
-                elements[i], expected[i-1])
-            return error
-        end
-
-        args[i-1] = arg
-    end
-
-    return { op = opcode, args = args, line = luasm.current_line }
-end
 
 --[[
     Creates an instruction that is being used for parsing the input
@@ -122,8 +77,36 @@ function LuASM.instruction(name, structure, settings)
     return obj
 end
 
-function LuASM.file_tokenizer(name)
-    local file = io.open(name, "r")
+-- =========================================== --
+-- |                  Parser                 | --
+-- =========================================== --
+
+local Tokenizer = {}
+
+function Tokenizer.get_next_line()
+    error("This function has to be implemented!")
+    return nil
+end
+
+--[[
+    Creates a new tokenizer without a specific implementation.
+]]
+function Tokenizer:new()
+    local obj = {}
+
+    setmetatable(obj, self)
+    self.__index = self
+
+    return obj
+end
+
+--[[
+    Reads in a file and returns a tokenizer for that file.
+
+    @param path A string of the path to the file
+--]]
+function LuASM.file_tokenizer(path)
+    local file = io.open(path, "r")
     if file == nil then
         return nil
     end
@@ -135,6 +118,11 @@ function LuASM.file_tokenizer(name)
     return tokenizer
 end
 
+--[[
+    Reads in a string of the asm and returns a tokenizer for that file.
+
+    @param input A string of the content
+--]]
 function LuASM.string_tokenizer(input)
     local tokenizer = Tokenizer:new()
 
@@ -158,6 +146,41 @@ function LuASM.string_tokenizer(input)
     end
 
     return tokenizer
+end
+
+--[[
+    Parses the instruction and returns an object with the structure:
+    { op = opcode, args = args, line = current line }
+    
+    If the parsing has errored out, it returns a string with the error message.
+--]]
+function instruction:parse(elements, luasm)
+    -- `elements[1]` is the mnemonic, the rest are raw operands
+    local opcode = self.name
+    local expected = self.structure          -- e.g. {"imm","reg"}
+
+    if #elements - 1 ~= #expected then
+        local error = string.format(
+            "Wrong number of operands for %s (expected %d, got %d)",
+            opcode, #expected, #elements - 1)
+        return error
+    end
+
+    local args = {}
+    for i = 2, #elements do
+        -- TODO: If structure element does not exist in settings
+        local arg = elements[i]:match(luasm.settings.syntax[expected[i-1]])
+        if arg == nil then
+            local error = string.format(
+                "Could not match argument '%s' (expected %s)",
+                elements[i], expected[i-1])
+            return error
+        end
+
+        args[i-1] = arg
+    end
+
+    return { op = opcode, args = args, line = luasm.current_line }
 end
 
 --[[
