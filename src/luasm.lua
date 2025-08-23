@@ -47,6 +47,11 @@ end
 
 local instruction = {}
 
+local function invalidExecutor(_instruction, _interpreter)
+    error("The executor is not implemented and such the instruction cannot be executed!")
+    return nil
+end
+
 --[[
     Creates an instruction that is being used for parsing the input
 
@@ -66,8 +71,8 @@ function LuASM.instruction(name, structure, settings)
     obj.structure = structure
 
     -- Default settings
-        -- Currently no settings
     setmetatable(settings, { __index = {
+        executor = invalidExecutor
     }})
     obj.settings = settings
 
@@ -273,6 +278,22 @@ function LuASM:parse(tokenizer)
     until token == nil -- or true
 
     return parse_data, nil
+end
+
+-- =========================================== --
+-- |                Interpreter              | --
+-- =========================================== --
+
+local interpreter = {}
+function LuASM:interpreter()
+    local obj = {}
+
+    setmetatable(obj, interpreter)
+    interpreter.__index = interpreter
+
+    obj.luasm = self
+
+    return obj
 end
 
 return LuASM
