@@ -284,6 +284,94 @@ end
 -- |                Interpreter              | --
 -- =========================================== --
 
+local Stack = {}
+
+--[[
+    Puts the given value onto the stack.
+--]]
+function Stack:push(value)
+    self._content[self.size + 1] = value
+    self.size = self.size + 1
+end
+
+--[[
+    Removes the top value of the stack and returns it.
+
+    If there is no value on the stack, it returns nil.
+--]]
+function Stack:pop()
+    if self.size == 0 then
+        return nil
+    end
+
+    self.size = self.size - 1
+    return self._content[self.size + 1]
+end
+
+--[[
+    Returns the top value on the stack, but does not remove it.
+
+    If there is no value on the stack, it returns nil.
+--]]
+function Stack:peek()
+    if self.size == 0 then
+        return nil
+    end
+
+    return self._content[self.size]
+end
+
+--[[
+    Gives the value on the stack with the index.
+
+    Given the scenario:
+    ```
+    stack:push("Hola")
+    stack:push("Hi")
+    stack:push("Hallo")
+    stack:push("Bonjour")
+
+    print(stack:get(1)) -- Prints "Hola"
+    print(stack:get(3)) -- Prints "Hallo"
+    print(stack:get(2)) -- Prints "Hi"
+    print(stack:get(4)) -- Prints "Bonjour"
+    ```
+
+    If the index is invalid, it will returns a nil:
+    ```
+    stack -- Currently has no elements
+    if stack:get(1) == nil then
+        print("Nothing here") -- Prints
+    end
+
+    stack:get(-10) -- Also returns nil
+    ```
+--]]
+function Stack:get(index)
+    if index < 0 or index > self.size then
+        return nil
+    end
+
+    return self._content[index]
+end
+
+--[[
+    Returns a stack datastructure. 
+    A stack is a LIFO (Last in, first out) datastructure where the last element that
+    was added, will be the first that can be removed.
+--]]
+function LuASM.stack()
+    local obj = { -- No size limit as this can be implemented if necessary
+        _content = {},
+        size = 0,
+    }
+
+    setmetatable(obj, Stack)
+    Stack.__index = Stack
+
+    return obj
+end
+
 local interpreter = {}
 function LuASM:interpreter()
     local obj = {}
