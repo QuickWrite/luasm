@@ -384,7 +384,7 @@ function interpreter:label_exists(label)
 end
 
 function interpreter:in_bounds(index)
-    return ~(index < 0 or index > self.data.parsed_lines)
+    return not (index < 0 or index > self.data.parsed_lines)
 end
 
 function interpreter:jump(index)
@@ -400,7 +400,7 @@ function interpreter:jump(index)
         error("The index must be a number or a string", 2)
     end
 
-    if ~self:in_bounds(index) then
+    if not self:in_bounds(index) then
         error("This position does not exist.")
     end
 
