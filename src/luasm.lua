@@ -185,7 +185,14 @@ function instruction:parse(elements, luasm)
         args[i - 1] = arg
     end
 
-    return { op = opcode, args = args, line = luasm.current_line }
+    return { 
+        op = opcode,
+        args = args,
+        line = luasm.current_line,
+        run = function(instr, interpreter)
+            self.settings.executor(instr, interpreter)
+        end
+    }
 end
 
 --[[
@@ -373,13 +380,61 @@ function LuASM.stack()
 end
 
 local interpreter = {}
-function LuASM:interpreter()
+
+-- TODO position_exists
+
+function interpreter:jump(index)
+    if type(index) == "string" then -- Jump to label
+        index = self.data.labels[index]
+
+        if index == nil then
+            return "This label does not exist"
+        end
+    end
+
+    if type(index) ~= "number" then
+        error("The index must be a number or a string", 2)
+    end
+
+    if index < 0 or index > self.data.parsed_lines then
+        error("This position does not exist.")
+    end
+
+    self.ic = index
+    return nil
+end
+
+function interpreter:next_instruction()
+    ::start::
+
+    if self.data.parsed_lines < self.ip then
+        return nil
+    end
+
+    local line = self.data.instructions[self.ip]
+    if line == nil then
+        self.ip = self.ip + 1
+        goto start
+    end
+
+    line:run(self)
+end
+
+function LuASM:interpreter(data, memory)
     local obj = {}
 
     setmetatable(obj, interpreter)
     interpreter.__index = interpreter
 
     obj.luasm = self
+
+    obj.ip = 1
+    obj.data = data
+
+    obj.memory = memory or {
+        stack = LuASM.stack(),
+        heap = {}
+    }
 
     return obj
 end
