@@ -185,7 +185,7 @@ function instruction:parse(elements, luasm)
         args[i - 1] = arg
     end
 
-    return { 
+    return {
         op = opcode,
         args = args,
         line = luasm.current_line,
@@ -363,7 +363,7 @@ function Stack:get(index)
 end
 
 --[[
-    Returns a stack datastructure. 
+    Returns a stack datastructure.
     A stack is a LIFO (Last in, first out) datastructure where the last element that
     was added, will be the first that can be removed.
 --]]
