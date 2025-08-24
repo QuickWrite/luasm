@@ -189,9 +189,7 @@ function instruction:parse(elements, luasm)
         op = opcode,
         args = args,
         line = luasm.current_line,
-        run = function(instr, interpreter)
-            self.settings.executor(instr, interpreter)
-        end
+        run  = self.settings.executor
     }
 end
 
