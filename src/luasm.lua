@@ -381,7 +381,13 @@ end
 
 local interpreter = {}
 
--- TODO position_exists
+function interpreter:label_exists(label)
+    return self.data.labels[label] ~= nil
+end
+
+function interpreter:in_bounds(index)
+    return ~(index < 0 or index > self.data.parsed_lines)
+end
 
 function interpreter:jump(index)
     if type(index) == "string" then -- Jump to label
@@ -396,7 +402,7 @@ function interpreter:jump(index)
         error("The index must be a number or a string", 2)
     end
 
-    if index < 0 or index > self.data.parsed_lines then
+    if ~self:in_bounds(index) then
         error("This position does not exist.")
     end
 
