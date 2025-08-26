@@ -165,9 +165,9 @@ function LuASM.string_tokenizer(input)
 end
 
 --- Parses the instruction and returns an object with the structure:
---- 
+---
 --- `{ op = opcode, args = args, line = current line }`
---- 
+---
 --- If the parsing has errored out, it returns a string with the error message.
 --- @param elements table  Token list where `elements[1]` is the mnemonic.
 --- @param luasm    table  The LuASM instance (provides settings, etc.).
@@ -340,7 +340,7 @@ function Stack:peek()
 end
 
 --- Gives the value on the stack with the index.
---- 
+---
 --- Given the scenario:
 --- ```
 --- stack:push("Hola")
@@ -363,7 +363,7 @@ end
 ---
 --- stack:get(-10) -- Also returns nil
 --- ```
---- 
+---
 --- The index is **1‑based** (bottom of the stack = 1).
 --- @param index number The index to fetch.
 --- @return any|nil The element at `index`, or `nil` if out of bounds.
