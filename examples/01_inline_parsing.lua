@@ -17,7 +17,7 @@ start:  mov 10 r0
         add  r0 r1
         jmp  start
 ]]
-local tokenizer = LuASM.file_tokenizer("./test.txt")
+local tokenizer = LuASM.string_tokenizer(src)
 
 -- 4. Parse
 local result = asm:parse(tokenizer)
