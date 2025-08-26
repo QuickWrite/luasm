@@ -16,8 +16,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Run luacheck for the codebase in the src/ folder
+      # Run luacheck for the codebase in the src/ and examples/ folder
       - name: Luacheck linter
         uses: lunarmodules/luacheck@v1
         with:
-            args: src
+            args: src examples
