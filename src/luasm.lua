@@ -446,8 +446,8 @@ function interpreter:next_instruction()
     end
 
     local line = self.data.instructions[self.ip]
+    self.ip = self.ip + 1
     if line == nil then
-        self.ip = self.ip + 1
         goto start
     end
 
