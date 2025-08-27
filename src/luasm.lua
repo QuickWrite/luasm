@@ -453,7 +453,7 @@ function interpreter:next_instruction()
 
     local result = line:run(self)
 
-    return result == nil or result 
+    return result == nil or result
 end
 
 --- Creates a new interpreter instance.
