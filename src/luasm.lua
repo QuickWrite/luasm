@@ -105,7 +105,7 @@ local Tokenizer = {}
 --- Abstract method that must be overridden by a concrete tokenizer.
 function Tokenizer.get_next_line()
     error("This function has to be implemented!")
-    return nil
+    return false
 end
 
 --- Creates a new tokenizer without a specific implementation.
@@ -442,7 +442,7 @@ function interpreter:next_instruction()
     ::start::
 
     if self.data.parsed_lines < self.ip then
-        return nil
+        return false
     end
 
     local line = self.data.instructions[self.ip]
@@ -451,7 +451,9 @@ function interpreter:next_instruction()
         goto start
     end
 
-    line:run(self)
+    local result = line:run(self)
+
+    return result == nil or result 
 end
 
 --- Creates a new interpreter instance.

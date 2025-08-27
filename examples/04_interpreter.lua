@@ -31,7 +31,5 @@ local result = asm:parse(tokenizer)
 -- 5. Execution
 local interpreter = LuASM:interpreter(result)
 
-interpreter:next_instruction()
-interpreter:next_instruction()
-interpreter:next_instruction()
+while interpreter:next_instruction() do end
 
