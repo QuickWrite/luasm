@@ -12,7 +12,7 @@ local instructions = {
 -- 2. Create a runner (use default settings)
 local asm = LuASM:new(instructions, {
     syntax = {
-        string = "^\"[%w]*\"",
+        string = "^\"([%w]*)\"",
         reg    = "^%a[%w]*"
     }
 })
