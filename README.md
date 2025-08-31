@@ -2,7 +2,7 @@
 A library to parse and execute custom ASM.
 
 > [!IMPORTANT]
-> This project is still under construction. Nothing has to work and probably nothing does work.
+> This project is still under construction. But it is nearly in a state that is very usable. 😄
 
 It is a light‑weight Lua library that lets you define, parse and later execute a custom assembly‑like language. <br />
 And the libary is deliberately minimal:
@@ -10,8 +10,7 @@ And the libary is deliberately minimal:
 - Pluggable instruction set – you decide which mnemonics exist and how their operands are interpreted.
 - Configurable syntax – label delimiters, immediate prefixes, register prefixes, etc., are all driven by a settings table.
 - Tokenizer abstraction – you can feed source from a string, a file, or any other stream by providing a get_next_line method.
-
-The project is currently a prototype; the execution engine is not yet implemented, but the parsing infrastructure is functional enough to be used as a foundation for a custom assembler or a teaching tool.
+- Execute the code - you can also define the behaviour of the instruction and with that execute this code.
 
 ## Installation
 Because LuASM is a single Lua file, installation is straightforward:
@@ -30,7 +29,7 @@ luasm.lua   # <-- the file you just saw
 
 No external libraries are required; the code runs on any Lua interpreter (5.1, 5.2, 5.3, LuaJIT, etc.).
 
-## Quick Start (stuff that currently works)
+## Quick Start
 ```lua
 -- 1. Define the instruction set
 local instructions = {
@@ -71,6 +70,11 @@ Label: start -> line:   1
 2       add
 3       jmp
 ```
+
+## Examples
+To see other examples, they can be found in the [`examples/`](examples) directory. To execute them the README inside this directory should be followed.
+
+These examples are numbered so that they ban be viewed in sequential order.
 
 ## License
 LuASM is released under the MIT License – you are free to use, modify, and distribute it in your projects. See the [LICENSE](LICENSE) file for the full text.
