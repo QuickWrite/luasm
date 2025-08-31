@@ -186,8 +186,13 @@ function instruction:parse(elements, luasm)
 
     local args = {}
     for i = 2, #elements do
-        -- TODO: If structure element does not exist in settings
-        local arg = elements[i]:match(luasm.settings.syntax[expected[i - 1]])
+        local pattern = luasm.settings.syntax[expected[i - 1]]
+        if pattern == nil then
+            error("The pattern with the name of '" .. expected[i - 1] .. "' does not exist.", 2)
+            return "Pattern not found"
+        end
+
+        local arg = elements[i]:match(pattern)
         if arg == nil then
             local err = string.format(
                 "Could not match argument '%s' (expected %s)",
