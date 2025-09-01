@@ -443,6 +443,8 @@ end
 --- The function advances `self.ip` until it finds a non‑nil instruction,
 --- then calls its `run` method (the executor supplied when the instruction
 --- was defined).
+--- @return boolean True if the instruction executed correctly
+---                 False if there is no instruction or the instruction errored out
 function interpreter:next_instruction()
     ::start::
 
