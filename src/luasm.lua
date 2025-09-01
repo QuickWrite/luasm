@@ -37,6 +37,7 @@ function LuASM:new(instructions, settings)
     setmetatable(settings, { __index = {
         separator = "[^,%s]+",
         label = "^([%a]+):%s*(.*)",
+        comment = "[;#].*$",
         syntax = {
             imm = "^[%d]+",
             reg = "^%a[%w]*",
@@ -227,6 +228,11 @@ function LuASM:parse(tokenizer)
         parse_data.parsed_lines = parse_data.parsed_lines + 1
 
         if token ~= nil then
+
+            -- Remove comments
+            if self.settings.comment ~= nil then
+                token = token:gsub(self.settings.comment, "")
+            end
 
             --[[
                 This is very basic label processing as labels could be
