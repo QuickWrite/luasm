@@ -245,7 +245,7 @@ function LuASM:parse(tokenizer)
             -- LABEL PROCESSING (very basic, one‑label per line)
             -- -------------------------------------------------
             if self.settings.label ~= nil then
-                local label, rest = token:match(self.settings.label)
+                local label, rest = line:match(self.settings.label)
                 if label ~= nil then
                     -- Detect duplicate label definitions.
                     if parse_data.labels[label] ~= nil then
@@ -308,7 +308,7 @@ function LuASM:parse(tokenizer)
 
             ::continue::
         end
-    until token == nil   -- EOF
+    until line == nil   -- EOF
 
     return parse_data, nil
 end
