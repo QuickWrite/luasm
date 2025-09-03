@@ -222,16 +222,16 @@ function LuASM:parse(tokenizer)
         parsed_lines = 0
     }
 
-    local token
+    local line
     repeat
-        token = tokenizer:get_next_line()
+        line = tokenizer:get_next_line()
         parse_data.parsed_lines = parse_data.parsed_lines + 1
 
-        if token ~= nil then
+        if line ~= nil then
 
             -- Remove comments
             if self.settings.comment ~= nil then
-                token = token:gsub(self.settings.comment, "")
+                line = line:gsub(self.settings.comment, "")
             end
 
             --[[
@@ -260,17 +260,17 @@ function LuASM:parse(tokenizer)
                         location = parse_data.parsed_lines
                     }
 
-                    token = trim(rest)
+                    line = trim(rest)
                 end
             end
 
-            local elements = {}
-            string.gsub(token, self.settings.separator,
-                function(value) elements[#elements + 1] = value end)
-
-            if #elements == 0 then
-                goto continue   -- empty line (or comment)
+            if line == "" then
+                goto continue   -- Rest is empty
             end
+
+            local elements = {}
+            string.gsub(line, self.settings.separator,
+                function(value) elements[#elements + 1] = value end)
 
             local errors = {}
             for _, instr in ipairs(self.instructions) do
