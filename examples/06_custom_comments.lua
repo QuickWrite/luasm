@@ -19,7 +19,7 @@ start:  mov 10 r0    = My custom comment
         add  r0 r1   = This just works
         jmp  start
 ]]
-local tokenizer = LuASM.string_tokenizer(src)
+local tokenizer = LuASM:string_tokenizer(src)
 
 -- 4. Parse
 local result = asm:parse(tokenizer)

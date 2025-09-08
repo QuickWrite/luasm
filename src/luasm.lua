@@ -109,10 +109,22 @@ function Tokenizer.get_next_line()
     return false
 end
 
+--- @return boolean
+function Tokenizer:has_next_line()
+    return false
+end
+
+--- @return string|nil
+function Tokenizer:get_label()
+    return nil
+end
+
 --- Creates a new tokenizer without a specific implementation.
 --- @return table A tokenizer instance (needs a concrete `get_next_line` implementation).
-function Tokenizer:new()
+function Tokenizer:new(luasm)
     local obj = {}
+
+    obj.luasm = luasm
 
     setmetatable(obj, self)
     self.__index = self
@@ -123,13 +135,13 @@ end
 --- Reads in a file and returns a tokenizer for that file.
 --- @param path string Path to the file to read.
 --- @return table|nil Tokenizer instance or `nil` if the file cannot be opened.
-function LuASM.file_tokenizer(path)
+function LuASM:file_tokenizer(path)
     local file = io.open(path, "r")
     if file == nil then
         return nil
     end
 
-    local tokenizer = LuASM.string_tokenizer(file:read("*a"))
+    local tokenizer = self:string_tokenizer(file:read("*a"))
 
     file:close()
 
@@ -139,12 +151,14 @@ end
 --- Reads in a string of the asm and returns a tokenizer for that file.
 --- @param input string The complete ASM source as a string.
 --- @return table      Tokenizer instance.
-function LuASM.string_tokenizer(input)
+function LuASM:string_tokenizer(input)
     local tokenizer = Tokenizer:new()
 
     tokenizer.input        = input
     tokenizer.cursor       = 1      -- byte index inside `input`
     tokenizer.current_line = 1      -- line counter (1‑based)
+
+    tokenizer.line         = nil
 
     -- Concrete implementation of `get_next_line` for a string source.
     tokenizer.get_next_line = function()
@@ -156,10 +170,36 @@ function LuASM.string_tokenizer(input)
 
         local line = trim(string.sub(tokenizer.input, tokenizer.cursor, endIndex))
 
+        -- Remove comment from the line
+        if self.settings.comment ~= nil then
+            line = line:gsub(self.settings.comment, "")
+        end
+
         tokenizer.cursor       = endIndex + 1
         tokenizer.current_line = tokenizer.current_line + 1
 
         return line
+    end
+
+    tokenizer.has_line = function()
+        tokenizer.line = tokenizer.get_next_line()
+
+        return tokenizer.line ~= nil
+    end
+
+    tokenizer.get_label = function()
+        if self.settings.label == nil then
+            return nil
+        end
+
+        local label, rest = tokenizer.line:match(self.settings.label)
+
+        if label ~= nil then
+            tokenizer.line   = rest
+            tokenizer.cursor = tokenizer.cursor + #label
+        end
+
+        return label
     end
 
     return tokenizer
@@ -222,9 +262,7 @@ function LuASM:parse(tokenizer)
         parsed_lines = 0
     }
 
-    while tokenizer:has_next_line() do
-        tokenizer:goto_next_line() -- Maybe there should be an error if not everything was parsed
-
+    while tokenizer:has_line() do
         parse_data.parsed_lines = parse_data.parsed_lines + 1
 
         local label = tokenizer:get_label()

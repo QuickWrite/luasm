@@ -17,7 +17,7 @@ start:  mov 10 r0  # This is a comment
         add  r0 r1 ; This is another comment
         jmp  start
 ]]
-local tokenizer = LuASM.string_tokenizer(src)
+local tokenizer = LuASM:string_tokenizer(src)
 
 -- 4. Parse
 local result = asm:parse(tokenizer)

@@ -12,7 +12,7 @@ local instructions = {
 local asm = LuASM:new(instructions, {})
 
 -- 3. Tokenize a source string
-local tokenizer = LuASM.file_tokenizer("./data/02_data.lasm")
+local tokenizer = LuASM:file_tokenizer("./data/02_data.lasm")
 
 -- 4. Parse
 local result = asm:parse(tokenizer)
