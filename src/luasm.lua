@@ -104,19 +104,33 @@ end
 local Tokenizer = {}
 
 --- Abstract method that must be overridden by a concrete tokenizer.
+--- @return string|nil
 function Tokenizer.get_next_line()
     error("This function has to be implemented!")
-    return false
+    return nil
 end
 
 --- @return boolean
-function Tokenizer:has_next_line()
-    return false
+function Tokenizer:has_line()
+    self.line = self:get_next_line()
+
+    return self.line ~= nil
 end
 
 --- @return string|nil
 function Tokenizer:get_label()
-    return nil
+    if self.luasm.settings.label == nil then
+        return nil
+    end
+
+    local label, rest = self.line:match(self.settings.label)
+
+    if label ~= nil then
+        self.line   = rest
+        self.cursor = self.cursor + #label
+    end
+
+    return label
 end
 
 --- Creates a new tokenizer without a specific implementation.
@@ -179,27 +193,6 @@ function LuASM:string_tokenizer(input)
         tokenizer.current_line = tokenizer.current_line + 1
 
         return line
-    end
-
-    tokenizer.has_line = function()
-        tokenizer.line = tokenizer.get_next_line()
-
-        return tokenizer.line ~= nil
-    end
-
-    tokenizer.get_label = function()
-        if self.settings.label == nil then
-            return nil
-        end
-
-        local label, rest = tokenizer.line:match(self.settings.label)
-
-        if label ~= nil then
-            tokenizer.line   = rest
-            tokenizer.cursor = tokenizer.cursor + #label
-        end
-
-        return label
     end
 
     return tokenizer
