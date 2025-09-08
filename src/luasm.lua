@@ -222,93 +222,75 @@ function LuASM:parse(tokenizer)
         parsed_lines = 0
     }
 
-    local line
-    repeat
-        line = tokenizer:get_next_line()
+    while tokenizer:has_next_line() do
+        tokenizer:goto_next_line() -- Maybe there should be an error if not everything was parsed
+
         parse_data.parsed_lines = parse_data.parsed_lines + 1
 
-        if line ~= nil then
+        local label = tokenizer:get_label()
 
-            -- Remove comments
-            if self.settings.comment ~= nil then
-                line = line:gsub(self.settings.comment, "")
-            end
+        --[[
+            This is very basic label processing as labels could be
+            nested and there could be priorities assigned with labels.
 
-            --[[
-                This is very basic label processing as labels could be
-                nested and there could be priorities assigned with labels.
-
-                But here all the labels are just a simple reference to a line.
-            ]]
-
-            -- -------------------------------------------------
-            -- LABEL PROCESSING (very basic, one‑label per line)
-            -- -------------------------------------------------
-            if self.settings.label ~= nil then
-                local label, rest = line:match(self.settings.label)
-                if label ~= nil then
-                    -- Detect duplicate label definitions.
-                    if parse_data.labels[label] ~= nil then
-                        return parse_data, {
-                            errors = { "The label '" .. label .. "' was found twice." },
-                            line   = parse_data.parsed_lines
-                        }
-                    end
-
-                    parse_data.labels[label] = {
-                        name     = label,
-                        location = parse_data.parsed_lines
-                    }
-
-                    line = trim(rest)
-                end
-            end
-
-            if line == "" then
-                goto continue   -- Rest is empty
-            end
-
-            local elements = {}
-            string.gsub(line, self.settings.separator,
-                function(value) elements[#elements + 1] = value end)
-
-            local errors = {}
-            for _, instr in ipairs(self.instructions) do
-                if instr.name ~= elements[1] then
-                    goto inline_continue
-                end
-
-                local result = instr:parse(elements, self)
-                if type(result) == "table" then
-                    parse_data.instructions[#parse_data.instructions + 1] = result
-                    goto continue           -- go to the outer `continue` label
-                else
-                    errors[#errors + 1] = result
-                end
-
-                ::inline_continue::
-            end
-
-            -------------------------------------------------
-            -- NO INSTRUCTION MATCHED
-            -------------------------------------------------
-            if #errors == 0 then
-                -- No instruction with that mnemonic exists.
+            But here all the labels are just a simple reference to a line.
+        --]]
+        if label ~= nil then
+            if parse_data.labels[label] ~= nil then
                 return parse_data, {
-                    errors = { "There is no instruction with the name '" .. elements[1] .. "'" },
-                    line   = parse_data.parsed_lines
-                }
-            else
-                -- At least one instruction matched the name but rejected the operands.
-                return parse_data, {
-                    errors = errors,
+                    errors = { "The label '" .. label .. "' was found twice." },
                     line   = parse_data.parsed_lines
                 }
             end
 
-            ::continue::
+            parse_data.labels[label] = {
+                name     = label,
+                location = #parse_data.instructions + 1
+            }
         end
-    until line == nil   -- EOF
+
+        if tokenizer:end_of_line() then
+            goto continue
+        end
+
+        local mnemonic = tokenizer:get_mnemonic()
+
+        local errors = {}
+        for _, instr in ipairs(self.instructions) do
+            if instr.name ~= mnemonic then
+                goto inner
+            end
+
+            local result = instr:parse(tokenizer, self)
+            if type(result) == "table" then
+                parse_data.instructions[#parse_data.instructions + 1] = result
+                goto continue           -- go to the outer `continue` label
+            else
+                errors[#errors + 1] = result
+            end
+
+            ::inner::
+        end
+
+        -------------------------------------------------
+        -- NO INSTRUCTION MATCHED
+        -------------------------------------------------
+        if #errors == 0 then
+            -- No instruction with that mnemonic exists.
+            return parse_data, {
+                errors = { "There is no instruction with the name '" .. mnemonic .. "'" },
+                line   = parse_data.parsed_lines
+            }
+        else
+            -- At least one instruction matched the name but rejected the operands.
+            return parse_data, {
+                errors = errors,
+                line   = parse_data.parsed_lines
+            }
+        end
+
+        ::continue::
+    end
 
     return parse_data, nil
 end
