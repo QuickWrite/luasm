@@ -35,9 +35,10 @@ LuASM.version = "0.0.1"
 function LuASM:new(instructions, settings)
     -- Default settings
     setmetatable(settings, { __index = {
-        separator = "[^,%s]+",
+        separator = "^[ ,]+",
         label = "^([%a]+):%s*(.*)",
         comment = "[;#].*$",
+        mnemonic = "^([%a]+)(.*)",
         syntax = {
             imm = "^[%d]+",
             reg = "^%a[%w]*",
@@ -110,6 +111,10 @@ function Tokenizer.get_next_line()
     return nil
 end
 
+function Tokenizer:eol()
+    return self.line:len() == 0
+end
+
 --- @return boolean
 function Tokenizer:has_line()
     self.line = self:get_next_line()
@@ -123,14 +128,26 @@ function Tokenizer:get_label()
         return nil
     end
 
-    local label, rest = self.line:match(self.settings.label)
+    local label, rest = self.line:match(self.luasm.settings.label)
 
     if label ~= nil then
-        self.line   = rest
+        self.line   = trim(rest)
         self.cursor = self.cursor + #label
     end
 
     return label
+end
+
+--- @return boolean
+function Tokenizer:get_mnemonic()
+    local mnemonic, rest = self.line:match(self.luasm.settings.mnemonic)
+
+    if mnemonic ~= nil then
+        self.line   = trim(rest)
+        self.cursor = self.cursor + #mnemonic
+    end
+
+    return mnemonic
 end
 
 --- Creates a new tokenizer without a specific implementation.
@@ -166,7 +183,7 @@ end
 --- @param input string The complete ASM source as a string.
 --- @return table      Tokenizer instance.
 function LuASM:string_tokenizer(input)
-    local tokenizer = Tokenizer:new()
+    local tokenizer = Tokenizer:new(self)
 
     tokenizer.input        = input
     tokenizer.cursor       = 1      -- byte index inside `input`
@@ -186,7 +203,7 @@ function LuASM:string_tokenizer(input)
 
         -- Remove comment from the line
         if self.settings.comment ~= nil then
-            line = line:gsub(self.settings.comment, "")
+            line = trim(line:gsub(self.settings.comment, ""))
         end
 
         tokenizer.cursor       = endIndex + 1
@@ -280,7 +297,7 @@ function LuASM:parse(tokenizer)
             }
         end
 
-        if tokenizer:end_of_line() then
+        if tokenizer:eol() then
             goto continue
         end
 
