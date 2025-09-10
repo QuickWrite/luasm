@@ -105,24 +105,29 @@ end
 local Tokenizer = {}
 
 --- Abstract method that must be overridden by a concrete tokenizer.
---- @return string|nil
+--- @return string|nil The next line
 function Tokenizer.get_next_line()
     error("This function has to be implemented!")
     return nil
 end
 
+--- Checks if the parser is at the end of the line
+--- @return boolean If it is at the end of the line
 function Tokenizer:eol()
     return self.line:len() == 0
 end
 
---- @return boolean
+--- Gets the next line and checks if it exist. 
+--- This method moves the tokenizer to the next line.
+--- @return boolean If the next line exists
 function Tokenizer:has_line()
     self.line = self:get_next_line()
 
     return self.line ~= nil
 end
 
---- @return string|nil
+--- Returns the label that is in this line
+--- @return string|nil The label
 function Tokenizer:get_label()
     if self.luasm.settings.label == nil then
         return nil
@@ -138,7 +143,8 @@ function Tokenizer:get_label()
     return label
 end
 
---- @return boolean
+--- Returns the mnemonic of the line
+--- @return string|nil The mnemonic that is being parsed
 function Tokenizer:get_mnemonic()
     local mnemonic, rest = self.line:match(self.luasm.settings.mnemonic)
 
@@ -152,6 +158,9 @@ end
 
 local ArgumentTokenizer = {}
 
+--- Returns the next argument based on the argument type
+--- @param argument_type string The argument type that should be parsed
+--- @return string|nil The parsed result
 function ArgumentTokenizer:get_next(argument_type)
     local argument_regex = self.luasm.settings.syntax[argument_type]
 
@@ -164,6 +173,8 @@ function ArgumentTokenizer:get_next(argument_type)
     return matched
 end
 
+--- Skips the separator part of the line
+--- @return boolean If a separator existed
 function ArgumentTokenizer:skip_separator()
     local matched = self.line:match(self.luasm.settings.separator, self.position)
 
@@ -176,17 +187,20 @@ function ArgumentTokenizer:skip_separator()
     return true
 end
 
+--- Resets the argument tokenizer
 function ArgumentTokenizer:reset()
     self.position = 1
 end
 
+--- Checks if the tokenizer is at the end of the line
+--- @return boolean If the end of line is reached
 function ArgumentTokenizer:eol()
     return self.position > self.line:len()
 end
 
 --- Creates an argument tokenizer based upon the current state
 --- of the creating tokenizer.
---- 
+---
 --- @return table The argument tokenizer
 function Tokenizer:argument_tokenizer()
     local obj = {}
