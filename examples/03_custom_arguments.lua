@@ -20,7 +20,7 @@ local src = [[
 mov reg0, reg1
 print "Hello"
 ]]
-local tokenizer = LuASM.string_tokenizer(src)
+local tokenizer = asm:string_tokenizer(src)
 
 -- 4. Parse
 local result = asm:parse(tokenizer)

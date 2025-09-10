@@ -23,7 +23,7 @@ print "Hello"
 print "World"
 print "Message"
 ]]
-local tokenizer = LuASM.string_tokenizer(src)
+local tokenizer = asm:string_tokenizer(src)
 
 -- 4. Parse
 local result = asm:parse(tokenizer)

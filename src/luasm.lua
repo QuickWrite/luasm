@@ -35,9 +35,10 @@ LuASM.version = "0.0.1"
 function LuASM:new(instructions, settings)
     -- Default settings
     setmetatable(settings, { __index = {
-        separator = "[^,%s]+",
+        separator = "^[ ,]+",
         label = "^([%a]+):%s*(.*)",
         comment = "[;#].*$",
+        mnemonic = "^([%a]+)(.*)",
         syntax = {
             imm = "^[%d]+",
             reg = "^%a[%w]*",
@@ -104,15 +105,122 @@ end
 local Tokenizer = {}
 
 --- Abstract method that must be overridden by a concrete tokenizer.
+--- @return string|nil The next line
 function Tokenizer.get_next_line()
     error("This function has to be implemented!")
-    return false
+    return nil
+end
+
+--- Checks if the parser is at the end of the line
+--- @return boolean If it is at the end of the line
+function Tokenizer:eol()
+    return self.line:len() == 0
+end
+
+--- Gets the next line and checks if it exist.
+--- This method moves the tokenizer to the next line.
+--- @return boolean If the next line exists
+function Tokenizer:has_line()
+    self.line = self:get_next_line()
+
+    return self.line ~= nil
+end
+
+--- Returns the label that is in this line
+--- @return string|nil The label
+function Tokenizer:get_label()
+    if self.luasm.settings.label == nil then
+        return nil
+    end
+
+    local label, rest = self.line:match(self.luasm.settings.label)
+
+    if label ~= nil then
+        self.line   = trim(rest)
+        self.cursor = self.cursor + #label
+    end
+
+    return label
+end
+
+--- Returns the mnemonic of the line
+--- @return string|nil The mnemonic that is being parsed
+function Tokenizer:get_mnemonic()
+    local mnemonic, rest = self.line:match(self.luasm.settings.mnemonic)
+
+    if mnemonic ~= nil then
+        self.line   = trim(rest)
+        self.cursor = self.cursor + #mnemonic
+    end
+
+    return mnemonic
+end
+
+local ArgumentTokenizer = {}
+
+--- Returns the next argument based on the argument type
+--- @param argument_type string The argument type that should be parsed
+--- @return string|nil The parsed result
+function ArgumentTokenizer:get_next(argument_type)
+    local argument_regex = self.luasm.settings.syntax[argument_type]
+
+    local matched = self.line:match(argument_regex, self.position)
+
+    if matched ~= nil then
+        self.position = self.position + matched:len()
+    end
+
+    return matched
+end
+
+--- Skips the separator part of the line
+--- @return boolean If a separator existed
+function ArgumentTokenizer:skip_separator()
+    local matched = self.line:match(self.luasm.settings.separator, self.position)
+
+    if matched == nil then
+        return false
+    end
+
+    self.position = self.position + matched:len()
+
+    return true
+end
+
+--- Resets the argument tokenizer
+function ArgumentTokenizer:reset()
+    self.position = 1
+end
+
+--- Checks if the tokenizer is at the end of the line
+--- @return boolean If the end of line is reached
+function ArgumentTokenizer:eol()
+    return self.position > self.line:len()
+end
+
+--- Creates an argument tokenizer based upon the current state
+--- of the creating tokenizer.
+---
+--- @return table The argument tokenizer
+function Tokenizer:argument_tokenizer()
+    local obj = {}
+
+    obj.line     = self.line
+    obj.luasm    = self.luasm
+    obj.position = 1
+
+    setmetatable(obj, ArgumentTokenizer)
+    ArgumentTokenizer.__index = ArgumentTokenizer
+
+    return obj
 end
 
 --- Creates a new tokenizer without a specific implementation.
 --- @return table A tokenizer instance (needs a concrete `get_next_line` implementation).
-function Tokenizer:new()
+function Tokenizer:new(luasm)
     local obj = {}
+
+    obj.luasm = luasm
 
     setmetatable(obj, self)
     self.__index = self
@@ -123,13 +231,13 @@ end
 --- Reads in a file and returns a tokenizer for that file.
 --- @param path string Path to the file to read.
 --- @return table|nil Tokenizer instance or `nil` if the file cannot be opened.
-function LuASM.file_tokenizer(path)
+function LuASM:file_tokenizer(path)
     local file = io.open(path, "r")
     if file == nil then
         return nil
     end
 
-    local tokenizer = LuASM.string_tokenizer(file:read("*a"))
+    local tokenizer = self:string_tokenizer(file:read("*a"))
 
     file:close()
 
@@ -139,12 +247,14 @@ end
 --- Reads in a string of the asm and returns a tokenizer for that file.
 --- @param input string The complete ASM source as a string.
 --- @return table      Tokenizer instance.
-function LuASM.string_tokenizer(input)
-    local tokenizer = Tokenizer:new()
+function LuASM:string_tokenizer(input)
+    local tokenizer = Tokenizer:new(self)
 
     tokenizer.input        = input
     tokenizer.cursor       = 1      -- byte index inside `input`
     tokenizer.current_line = 1      -- line counter (1‑based)
+
+    tokenizer.line         = nil
 
     -- Concrete implementation of `get_next_line` for a string source.
     tokenizer.get_next_line = function()
@@ -155,6 +265,11 @@ function LuASM.string_tokenizer(input)
         local _, endIndex = string.find(tokenizer.input, "[^\r\n]+", tokenizer.cursor)
 
         local line = trim(string.sub(tokenizer.input, tokenizer.cursor, endIndex))
+
+        -- Remove comment from the line
+        if self.settings.comment ~= nil then
+            line = trim(line:gsub(self.settings.comment, ""))
+        end
 
         tokenizer.cursor       = endIndex + 1
         tokenizer.current_line = tokenizer.current_line + 1
@@ -170,37 +285,46 @@ end
 --- `{ op = opcode, args = args, line = current line }`
 ---
 --- If the parsing has errored out, it returns a string with the error message.
---- @param elements table  Token list where `elements[1]` is the mnemonic.
---- @param luasm    table  The LuASM instance (provides settings, etc.).
+--- @param arguments table  Token list where `elements[1]` is the mnemonic.
+--- @param luasm     table  The LuASM instance (provides settings, etc.).
 --- @return table|string   On success a table `{op, args, line, run}`; on failure a string error message.
-function instruction:parse(elements, luasm)
+function instruction:parse(arguments, luasm)
     -- `elements[1]` is the mnemonic, the rest are raw operands
     local opcode   = self.name
     local expected = self.structure          -- e.g. {"imm","reg"}
 
-    if #elements - 1 ~= #expected then
-        local err = string.format(
-            "Wrong number of operands for %s (expected %d, got %d)",
-            opcode, #expected, #elements - 1)
-        return err
-    end
 
     local args = {}
-    for i = 2, #elements do
-        local pattern = luasm.settings.syntax[expected[i - 1]]
-        if pattern == nil then
-            error("The pattern with the name of '" .. expected[i - 1] .. "' does not exist.", 2)
-            return "Pattern not found"
+    for index, value in ipairs(expected) do
+        if index ~= 1 then
+            if not arguments:skip_separator() then
+                local err = string.format(
+                    "Expected separator after the argument number %d (for %s)",
+                    index - 1, opcode
+                )
+                return err
+            end
         end
 
-        local arg = elements[i]:match(pattern)
+        local arg = arguments:get_next(value)
+
         if arg == nil then
             local err = string.format(
-                "Could not match argument '%s' (expected %s)",
-                elements[i], expected[i - 1])
+                "Wrong number of operands for %s (expected %d but got less)",
+                opcode, #expected
+            )
             return err
         end
-        args[i - 1] = arg
+
+        args[#args + 1] = arg
+    end
+
+    if not arguments:eol() then
+        local err = string.format(
+            "Wrong number of operands for %s (expected %d but got more)",
+            opcode, #expected
+        )
+        return err
     end
 
     return {
@@ -222,93 +346,77 @@ function LuASM:parse(tokenizer)
         parsed_lines = 0
     }
 
-    local token
-    repeat
-        token = tokenizer:get_next_line()
+    while tokenizer:has_line() do
         parse_data.parsed_lines = parse_data.parsed_lines + 1
 
-        if token ~= nil then
+        local label = tokenizer:get_label()
 
-            -- Remove comments
-            if self.settings.comment ~= nil then
-                token = token:gsub(self.settings.comment, "")
-            end
+        --[[
+            This is very basic label processing as labels could be
+            nested and there could be priorities assigned with labels.
 
-            --[[
-                This is very basic label processing as labels could be
-                nested and there could be priorities assigned with labels.
-
-                But here all the labels are just a simple reference to a line.
-            ]]
-
-            -- -------------------------------------------------
-            -- LABEL PROCESSING (very basic, one‑label per line)
-            -- -------------------------------------------------
-            if self.settings.label ~= nil then
-                local label, rest = token:match(self.settings.label)
-                if label ~= nil then
-                    -- Detect duplicate label definitions.
-                    if parse_data.labels[label] ~= nil then
-                        return parse_data, {
-                            errors = { "The label '" .. label .. "' was found twice." },
-                            line   = parse_data.parsed_lines
-                        }
-                    end
-
-                    parse_data.labels[label] = {
-                        name     = label,
-                        location = parse_data.parsed_lines
-                    }
-
-                    token = trim(rest)
-                end
-            end
-
-            local elements = {}
-            string.gsub(token, self.settings.separator,
-                function(value) elements[#elements + 1] = value end)
-
-            if #elements == 0 then
-                goto continue   -- empty line (or comment)
-            end
-
-            local errors = {}
-            for _, instr in ipairs(self.instructions) do
-                if instr.name ~= elements[1] then
-                    goto inline_continue
-                end
-
-                local result = instr:parse(elements, self)
-                if type(result) == "table" then
-                    parse_data.instructions[#parse_data.instructions + 1] = result
-                    goto continue           -- go to the outer `continue` label
-                else
-                    errors[#errors + 1] = result
-                end
-
-                ::inline_continue::
-            end
-
-            -------------------------------------------------
-            -- NO INSTRUCTION MATCHED
-            -------------------------------------------------
-            if #errors == 0 then
-                -- No instruction with that mnemonic exists.
+            But here all the labels are just a simple reference to a line.
+        --]]
+        if label ~= nil then
+            if parse_data.labels[label] ~= nil then
                 return parse_data, {
-                    errors = { "There is no instruction with the name '" .. elements[1] .. "'" },
-                    line   = parse_data.parsed_lines
-                }
-            else
-                -- At least one instruction matched the name but rejected the operands.
-                return parse_data, {
-                    errors = errors,
+                    errors = { "The label '" .. label .. "' was found twice." },
                     line   = parse_data.parsed_lines
                 }
             end
 
-            ::continue::
+            parse_data.labels[label] = {
+                name     = label,
+                location = #parse_data.instructions + 1
+            }
         end
-    until token == nil   -- EOF
+
+        if tokenizer:eol() then
+            goto continue
+        end
+
+        local mnemonic = tokenizer:get_mnemonic()
+
+        local errors = {}
+        local argument_tokenizer = tokenizer:argument_tokenizer()
+
+        for _, instr in ipairs(self.instructions) do
+            if instr.name ~= mnemonic then
+                goto inner
+            end
+
+            local result = instr:parse(argument_tokenizer, self)
+            argument_tokenizer:reset()
+
+            if type(result) == "table" then
+                parse_data.instructions[#parse_data.instructions + 1] = result
+                goto continue           -- go to the outer `continue` label
+            else
+                errors[#errors + 1] = result
+            end
+
+            ::inner::
+        end
+
+        -------------------------------------------------
+        -- NO INSTRUCTION MATCHED
+        -------------------------------------------------
+        if #errors == 0 then
+            -- No instruction with that mnemonic exists.
+            return parse_data, {
+                errors = { "There is no instruction with the name '" .. mnemonic .. "'" },
+                line   = parse_data.parsed_lines
+            }
+        else
+            -- At least one instruction matched the name but rejected the operands.
+            return parse_data, {
+                errors = errors,
+                line   = parse_data.parsed_lines
+            }
+        end
+
+        ::continue::
+    end
 
     return parse_data, nil
 end
