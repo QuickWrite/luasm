@@ -117,7 +117,7 @@ function Tokenizer:eol()
     return self.line:len() == 0
 end
 
---- Gets the next line and checks if it exist. 
+--- Gets the next line and checks if it exist.
 --- This method moves the tokenizer to the next line.
 --- @return boolean If the next line exists
 function Tokenizer:has_line()
