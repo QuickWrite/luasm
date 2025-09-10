@@ -150,6 +150,57 @@ function Tokenizer:get_mnemonic()
     return mnemonic
 end
 
+local ArgumentTokenizer = {}
+
+function ArgumentTokenizer:get_next(argument_type)
+    local argument_regex = self.luasm.settings.syntax[argument_type]
+
+    local matched = self.line:match(argument_regex, self.position)
+
+    if matched ~= nil then
+        self.position = self.position + matched:len()
+    end
+
+    return matched
+end
+
+function ArgumentTokenizer:skip_separator()
+    local matched = self.line:match(self.luasm.settings.separator, self.position)
+
+    if matched == nil then
+        return false
+    end
+
+    self.position = self.position + matched:len()
+
+    return true
+end
+
+function ArgumentTokenizer:reset()
+    self.position = 1
+end
+
+function ArgumentTokenizer:eol()
+    return self.position > self.line:len()
+end
+
+--- Creates an argument tokenizer based upon the current state
+--- of the creating tokenizer.
+--- 
+--- @return table The argument tokenizer
+function Tokenizer:argument_tokenizer()
+    local obj = {}
+
+    obj.line     = self.line
+    obj.luasm    = self.luasm
+    obj.position = 1
+
+    setmetatable(obj, ArgumentTokenizer)
+    ArgumentTokenizer.__index = ArgumentTokenizer
+
+    return obj
+end
+
 --- Creates a new tokenizer without a specific implementation.
 --- @return table A tokenizer instance (needs a concrete `get_next_line` implementation).
 function Tokenizer:new(luasm)
@@ -220,37 +271,46 @@ end
 --- `{ op = opcode, args = args, line = current line }`
 ---
 --- If the parsing has errored out, it returns a string with the error message.
---- @param elements table  Token list where `elements[1]` is the mnemonic.
---- @param luasm    table  The LuASM instance (provides settings, etc.).
+--- @param arguments table  Token list where `elements[1]` is the mnemonic.
+--- @param luasm     table  The LuASM instance (provides settings, etc.).
 --- @return table|string   On success a table `{op, args, line, run}`; on failure a string error message.
-function instruction:parse(elements, luasm)
+function instruction:parse(arguments, luasm)
     -- `elements[1]` is the mnemonic, the rest are raw operands
     local opcode   = self.name
     local expected = self.structure          -- e.g. {"imm","reg"}
 
-    if #elements - 1 ~= #expected then
-        local err = string.format(
-            "Wrong number of operands for %s (expected %d, got %d)",
-            opcode, #expected, #elements - 1)
-        return err
-    end
 
     local args = {}
-    for i = 2, #elements do
-        local pattern = luasm.settings.syntax[expected[i - 1]]
-        if pattern == nil then
-            error("The pattern with the name of '" .. expected[i - 1] .. "' does not exist.", 2)
-            return "Pattern not found"
+    for index, value in ipairs(expected) do
+        if index ~= 1 then
+            if not arguments:skip_separator() then
+                local err = string.format(
+                    "Expected separator after the argument number %d (for %s)",
+                    index - 1, opcode
+                )
+                return err
+            end
         end
 
-        local arg = elements[i]:match(pattern)
+        local arg = arguments:get_next(value)
+
         if arg == nil then
             local err = string.format(
-                "Could not match argument '%s' (expected %s)",
-                elements[i], expected[i - 1])
+                "Wrong number of operands for %s (expected %d but got less)",
+                opcode, #expected
+            )
             return err
         end
-        args[i - 1] = arg
+
+        args[#args + 1] = arg
+    end
+
+    if not arguments:eol() then
+        local err = string.format(
+            "Wrong number of operands for %s (expected %d but got more)",
+            opcode, #expected
+        )
+        return err
     end
 
     return {
@@ -304,12 +364,16 @@ function LuASM:parse(tokenizer)
         local mnemonic = tokenizer:get_mnemonic()
 
         local errors = {}
+        local argument_tokenizer = tokenizer:argument_tokenizer()
+
         for _, instr in ipairs(self.instructions) do
             if instr.name ~= mnemonic then
                 goto inner
             end
 
-            local result = instr:parse(tokenizer, self)
+            local result = instr:parse(argument_tokenizer, self)
+            argument_tokenizer:reset()
+
             if type(result) == "table" then
                 parse_data.instructions[#parse_data.instructions + 1] = result
                 goto continue           -- go to the outer `continue` label
