@@ -5,7 +5,7 @@ A library to parse and execute custom ASM.
 > This project is still under construction. But it is nearly in a state that is very usable. 😄
 
 It is a light‑weight Lua library that lets you define, parse and later execute a custom assembly‑like language. <br />
-And the libary is deliberately minimal:
+And the library is deliberately minimal:
 - No external dependencies – pure Lua 5.1+.
 - Pluggable instruction set – you decide which mnemonics exist and how their operands are interpreted.
 - Configurable syntax – label delimiters, immediate prefixes, register prefixes, etc., are all driven by a settings table.
@@ -22,6 +22,14 @@ git clone https://github.com/quickwrite/luasm.git
 
 Or, if you just need the file:
 
+```lua
+-- In your project directory
+luasm.lua   # <-- the file you just saw
+```
+
+No external libraries are required; the code runs on any Lua interpreter (5.1, 5.2, 5.3, LuaJIT, etc.).
+
+## Quick Start
 ```lua
 local LuASM = require("luasm")
 
