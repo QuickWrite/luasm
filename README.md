@@ -23,14 +23,8 @@ git clone https://github.com/quickwrite/luasm.git
 Or, if you just need the file:
 
 ```lua
--- In your project directory
-luasm.lua   # <-- the file you just saw
-```
+local LuASM = require("luasm")
 
-No external libraries are required; the code runs on any Lua interpreter (5.1, 5.2, 5.3, LuaJIT, etc.).
-
-## Quick Start
-```lua
 -- 1. Define the instruction set
 local instructions = {
     LuASM.instruction("mov", {"imm", "reg"}, {}),
@@ -48,7 +42,7 @@ start:  mov 10 r0
         add  r0 r1
         jmp  start
 ]]
-local tokenizer = LuASM.string_tokenizer(src)
+local tokenizer = asm:string_tokenizer(src)
 
 -- 4. Parse
 local result = asm:parse(tokenizer)
