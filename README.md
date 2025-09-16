@@ -73,7 +73,7 @@ Label: start -> line:   1
 ## Examples
 To see other examples, they can be found in the [`examples/`](examples) directory. To execute them the README inside this directory should be followed.
 
-These examples are numbered so that they ban be viewed in sequential order.
+These examples are numbered so that they can be viewed in sequential order.
 
 ## Version
 This project is currently in Version `0.1.0`. This is the first version that can actively be used.
