@@ -1,9 +1,6 @@
 # LuASM
 A library to parse and execute custom ASM.
 
-> [!IMPORTANT]
-> This project is still under construction. But it is nearly in a state that is very usable. 😄
-
 It is a light‑weight Lua library that lets you define, parse and later execute a custom assembly‑like language. <br />
 And the library is deliberately minimal:
 - No external dependencies – pure Lua 5.1+.
@@ -77,6 +74,9 @@ Label: start -> line:   1
 To see other examples, they can be found in the [`examples/`](examples) directory. To execute them the README inside this directory should be followed.
 
 These examples are numbered so that they ban be viewed in sequential order.
+
+## Version
+This project is currently in Version `0.1.0`. This is the first version that can actively be used.
 
 ## License
 LuASM is released under the MIT License – you are free to use, modify, and distribute it in your projects. See the [LICENSE](LICENSE) file for the full text.
