@@ -26,7 +26,7 @@ end
 local LuASM = {}
 
 --- Current version of the library.
-LuASM.version = "0.1.0"
+LuASM.version = "0.1"
 
 --- Creates a new LuASM runner with the specific instructions and settings
 --- @param instructions table   List of instruction objects (created with `LuASM.instruction`).
